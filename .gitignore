@@ -2,6 +2,10 @@
 __pycache__/
 *.py[cod]
 *$py.class
+*data
+models/*
+*.save
+*.output
 
 # C extensions
 *.so

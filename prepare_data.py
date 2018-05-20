@@ -90,9 +90,35 @@ def build_dataset(args):
         for z in tqdm(gen_a,desc="reading file")
         if len(z['reviewText']) > 0 and len(z['summary']) > 0 and len(proc_para(z['reviewText'])) > 0 and len(proc_para(z['summary'])) > 0
     ]
+    if args.sp:
+        data = [
+            (
+                d[0],
+                d[1],
+                d[4]+d[2],
+                d[3],
+                d[4],
+                d[5],
+                d[6]
+            )
+            for d in tqdm(data, desc="add sp")
+        ]
+    if args.sb:
+        data = [
+            (
+                d[0],
+                d[1],
+                d[2]+d[4],
+                d[3],
+                d[4],
+                d[5],
+                d[6]
+            )
+            for d in tqdm(data, desc="add sp")
+        ]
     print("finish processing data")
 
-    print(data[0])
+    print("data preview:", data[0])
     shuffle(data)
 
     splits = [randint(0,args.nb_splits-1) for _ in range(0,len(data))]
@@ -121,8 +147,8 @@ def get_sentences(path):
             yield(lk)
 
 
-def train_word2vec(args, subname):
-    p_name = args.output.replace('.pkl','')
+def train_word2vec(args, subname=''):
+    p_name = args.output.replace('.pkl',subname)
     model_path = p_name+'_word2vec_model_wmc{}'.format(args.word_min_count)
     if os.path.exists(model_path):
         model = gensim.models.Word2Vec.load(model_path)
@@ -151,10 +177,17 @@ def train_word2vec(args, subname):
 
 
 def main(args):
+    conf = ""
     if not args.only_word2vec:
         ds = build_dataset(args)
-        pkl.dump(ds,open(args.output,"wb"))
-    train_word2vec(args, '')
+        if args.sp or args.sb:
+            conf="_"
+        if args.sp:
+            conf += 'sp'
+        if args.sb:
+            conf += 'sb'
+        pkl.dump(ds,open(args.output.replace('.pkl',conf+".pkl"),"wb"))
+    train_word2vec(args, conf)
 
 
 if __name__ == '__main__':
@@ -165,6 +198,8 @@ if __name__ == '__main__':
     parser.add_argument("--word-min-count", type=int, default=1)
     parser.add_argument("--nb_splits",type=int, default=5)
     parser.add_argument("--only-word2vec",action='store_true',default=False)
+    parser.add_argument("--sp", action='store_true', default=False)
+    parser.add_argument("--sb", action='store_true', default=False)
     args = parser.parse_args()
 
     main(args)
